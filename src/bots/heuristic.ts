@@ -56,7 +56,7 @@ export function chooseAction(state: GameState, playerId: number): BotDecision {
 }
 
 /** Cap the candidate list so decisions stay fast on a phone. */
-function pruneCandidates(state: GameState, legal: Action[]): Action[] {
+function pruneCandidates(_state: GameState, legal: Action[]): Action[] {
   // Deploy-style actions: only "1" and "all" per region.
   const out: Action[] = [];
   const maxCount = new Map<string, number>();
@@ -99,7 +99,7 @@ function scoreCandidate(state: GameState, me: number, action: Action): number {
 }
 
 /** Action-specific shaping the plain evaluation can't see. */
-function shaping(before: GameState, after: GameState, me: number, action: Action): number {
+function shaping(before: GameState, _after: GameState, _me: number, action: Action): number {
   switch (action.type) {
     case 'decline': {
       // The evaluation collapses after a decline (no active race); add the
@@ -134,7 +134,7 @@ function tieNoise(state: GameState, playerId: number, action: Action): number {
   return (h % 1000) / 1000 * 0.02;
 }
 
-function describe(state: GameState, me: number, action: Action): string {
+function describe(state: GameState, _me: number, action: Action): string {
   const map = getMap(state);
   const terrain = (rid: number): string =>
     TERRAIN_NAMES[(map.regions[rid] as GameMap['regions'][number]).terrain];

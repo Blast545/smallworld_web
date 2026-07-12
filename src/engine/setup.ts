@@ -40,12 +40,9 @@ export function createInitialState(config: GameConfig, seed: number): GameState 
   const n = config.players.length;
   if (n < 2 || n > 5) throw new Error(`player count must be 2-5, got ${n}`);
   const map = mapForPlayerCount(n);
-  let rng = seedRng(seed);
-
-  let banners: RaceId[];
-  [banners, rng] = shuffled(ALL_RACES, rng);
-  let badges;
-  [badges, rng] = shuffled(ALL_POWERS, rng);
+  const rng0 = seedRng(seed);
+  const [banners, rng1] = shuffled(ALL_RACES, rng0);
+  const [badges, rng2] = shuffled(ALL_POWERS, rng1);
 
   const column: (ComboSlot | null)[] = [];
   for (let i = 0; i < 5; i++) {
@@ -55,8 +52,7 @@ export function createInitialState(config: GameConfig, seed: number): GameState 
   const badgeStack = badges.slice(5);
 
   const monsterRegions = map.regions.filter((r) => r.monsterSymbol);
-  let markerPool;
-  [markerPool, rng] = shuffled(ALL_MARKERS, rng);
+  const [markerPool, rng3] = shuffled(ALL_MARKERS, rng2);
   const markerDeck = markerPool.slice(0, monsterRegions.length);
 
   const tray = {} as Record<RaceId, number>;
@@ -65,7 +61,7 @@ export function createInitialState(config: GameConfig, seed: number): GameState 
   const state: GameState = {
     config: { players: config.players.map((p) => ({ ...p })), seed },
     mapId: map.id,
-    rng,
+    rng: rng3,
     turn: 1,
     maxTurns: map.turns,
     activePlayer: 0,
