@@ -12,10 +12,20 @@ import { dumpFailure, replayGame, runGame, stateFingerprint } from './selfplay';
 const RANDOM_PER_COUNT = 500; // x4 player counts = 2000 games
 const BOT_PER_COUNT = 125; // x4 player counts = 500 games
 
+/**
+ * Yield to the event loop so the vitest worker can answer RPC heartbeats;
+ * a fully synchronous multi-second loop starves them and the run is flagged
+ * with "[vitest-worker]: Timeout calling onTaskUpdate".
+ */
+function breathe(): Promise<void> {
+  return new Promise((resolve) => setImmediate(resolve));
+}
+
 describe('self-play: random legal actions', () => {
   for (const pc of [2, 3, 4, 5]) {
-    it(`${RANDOM_PER_COUNT} random games with ${pc} players`, () => {
+    it(`${RANDOM_PER_COUNT} random games with ${pc} players`, async () => {
       for (let i = 0; i < RANDOM_PER_COUNT; i++) {
+        if (i % 20 === 0) await breathe();
         const seed = pc * 100_000 + i;
         let actions: Action[] = [];
         try {
@@ -36,8 +46,9 @@ describe('self-play: random legal actions', () => {
 
 describe('self-play: heuristic bots', () => {
   for (const pc of [2, 3, 4, 5]) {
-    it(`${BOT_PER_COUNT} bot games with ${pc} players`, () => {
+    it(`${BOT_PER_COUNT} bot games with ${pc} players`, async () => {
       for (let i = 0; i < BOT_PER_COUNT; i++) {
+        if (i % 10 === 0) await breathe();
         const seed = pc * 1_000_000 + i;
         let actions: Action[] = [];
         try {

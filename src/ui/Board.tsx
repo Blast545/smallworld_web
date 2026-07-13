@@ -5,19 +5,9 @@
 import type { JSX } from 'react';
 import type { GameMap } from '../engine/maps';
 import type { GameState, RegionState } from '../engine/types';
-import type { Terrain } from '../engine/data';
+import { FIGURE_GLYPH, MARKER_GLYPH, TERRAIN_FILL } from './glyphs';
 
 const CELL = 40;
-
-const TERRAIN_FILL: Record<Terrain, string> = {
-  mine: '#8a6d3b',
-  mushroom: '#3f7d4e',
-  crystal: '#6d4fa1',
-  mud: '#6e5b3a',
-  blackMountain: '#3a3a44',
-  river: '#2a6f97',
-  chasm: '#14101a',
-};
 
 export const PLAYER_COLORS = ['#e4572e', '#f3a712', '#2e86ab', '#9c528b', '#4cae4f'];
 
@@ -160,41 +150,6 @@ function labelPos(map: GameMap, regionId: number): { x: number; y: number } {
   return { x: (best.c + 0.5) * CELL, y: (best.r + 0.5) * CELL };
 }
 
-function figureGlyph(kind: string): string {
-  switch (kind) {
-    case 'balrog':
-      return '👹';
-    case 'greatAncient':
-      return '🐙';
-    case 'queen':
-      return '👑';
-    case 'ghost':
-      return '👻';
-    case 'volcano':
-      return '🌋';
-    default:
-      return '?';
-  }
-}
-
-const MARKER_GLYPH: Record<string, string> = {
-  altarOfSouls: '⚱️',
-  cryptOfTombRaider: '🏚️',
-  diamondFields: '💎',
-  greatBrassPipe: '🎺',
-  fountainOfYouth: '⛲',
-  keepOnMotherland: '🏰',
-  mineOfLostDwarf: '⛏️',
-  stonehedge: '🗿',
-  wickedestPentacle: '⛧',
-  flyingDoormat: '🪄',
-  froggysRing: '💍',
-  stinkyTrollsSocks: '🧦',
-  scepterOfAvarice: '🪙',
-  shinyOrb: '🔮',
-  swordOfKillerRabbit: '🗡️',
-};
-
 export function Board({ map, state, highlights, selected, onTapRegion }: BoardProps): JSX.Element {
   const w = map.cols * CELL;
   const h = map.rows * CELL;
@@ -296,7 +251,7 @@ export function Board({ map, state, highlights, selected, onTapRegion }: BoardPr
         for (let i = 0; i < rs.armors; i++) badges.push('🛡️');
         if (rs.hammers > 0) badges.push(`🔨${rs.hammers}`);
         for (const m of rs.markers) badges.push(MARKER_GLYPH[m] ?? '★');
-        for (const f of rs.figures) badges.push(figureGlyph(f.kind));
+        for (const f of rs.figures) badges.push(FIGURE_GLYPH[f.kind] ?? '?');
         if (badges.length > 0) {
           bits.push(
             <text key="badges" pointerEvents="none" x={pos.x} y={pos.y - 15} textAnchor="middle" fontSize={11}>

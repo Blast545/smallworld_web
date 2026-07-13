@@ -14,6 +14,7 @@ import {
   TERRAIN_NAMES,
 } from '../engine/data';
 import { HelpSheet } from './Help';
+import type { HelpKind } from './Help';
 import type { GameMap } from '../engine/maps';
 import { getMap } from '../engine/setup';
 import { getScores } from '../engine/scoring';
@@ -46,7 +47,7 @@ export function Game({ store, onExit, onShowRules }: GameProps): JSX.Element {
   const [mode, setMode] = useState<RegionMode>({ kind: 'none' });
   const [pendingChoice, setPendingChoice] = useState<Action[] | null>(null);
   const [tab, setTab] = useState<'board' | 'log'>('board');
-  const [help, setHelp] = useState<'races' | 'powers' | null>(null);
+  const [help, setHelp] = useState<HelpKind | null>(null);
 
   const say = (text: string): void => {
     setNotice(text);
@@ -171,6 +172,15 @@ export function Game({ store, onExit, onShowRules }: GameProps): JSX.Element {
             selected={null}
             onTapRegion={onTapRegion}
           />
+          <button
+            className="legendbtn"
+            aria-label="map legend"
+            title="What do the colors and icons mean?"
+            data-testid="open-legend"
+            onClick={() => setHelp('legend')}
+          >
+            ℹ️
+          </button>
         </div>
       ) : (
         <Log entries={store.uiLog} />
@@ -319,7 +329,7 @@ interface ControlsProps {
   doAction: (a: Action) => void;
   me: { coins: number };
   say: (t: string) => void;
-  showHelp: (h: 'races' | 'powers') => void;
+  showHelp: (h: HelpKind) => void;
 }
 
 function HumanControls({
@@ -566,7 +576,7 @@ function ComboPicker({
   legal: Action[];
   doAction: (a: Action) => void;
   coins: number;
-  showHelp: (h: 'races' | 'powers') => void;
+  showHelp: (h: HelpKind) => void;
 }): JSX.Element {
   const combos = visibleCombos(state);
   return (

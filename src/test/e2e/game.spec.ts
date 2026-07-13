@@ -124,6 +124,12 @@ test('full 5-player game to a declared winner, offline-capable, resumable', asyn
   );
   expect(overflowGame).toBeLessThanOrEqual(0);
 
+  // Map legend: the info button opens the color/icon reference and closes.
+  await page.getByTestId('open-legend').click();
+  await expect(page.getByTestId('legend')).toBeVisible();
+  await page.getByTestId('close-help').click();
+  await expect(page.getByTestId('legend')).not.toBeVisible();
+
   // Resume check early in the game: reload and confirm the game continues.
   await page.waitForTimeout(1500);
   await page.reload();
