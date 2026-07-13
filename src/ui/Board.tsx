@@ -128,7 +128,12 @@ export function Board({ map, state, highlights, selected, onTapRegion }: BoardPr
       data-testid="board"
     >
       {map.regions.map((region) => (
-        <g key={region.id} onClick={() => onTapRegion(region.id)} data-testid={`region-${region.id}`}>
+        <g
+          key={region.id}
+          onClick={() => onTapRegion(region.id)}
+          data-testid={`region-${region.id}`}
+          data-hl={highlights.has(region.id) ? '1' : undefined}
+        >
           {cells(map, region.id).map((cell, i) => (
             <rect
               key={i}

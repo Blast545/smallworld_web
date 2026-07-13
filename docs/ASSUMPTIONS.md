@@ -16,7 +16,7 @@ machine-readable, with the ruling adopted. Referenced from `RULES.md` as `[A#]`.
   in near-equal proportion, one river crossing the board with two ends at the
   board edge, impassable chasms (≥1 with a volcano symbol), ≤7 monster-symbol
   regions (2 monsters each), ≤9 black-mountain regions, region counts scaled
-  by player count (2p:22, 3p:26, 4p:30, 5p:34 land+river regions). Rule-level
+  by player count (2p:21, 3p:24, 4p:30, 5p:32 land+river regions). Rule-level
   fidelity is preserved; geography is not the printed geography.
 - **[A4] "Mudpool" = "Muddy Region".** Mudmen reference Mudpool Regions; the
   Muddy power references Muddy Regions; the compatibility appendix equates
@@ -322,6 +322,20 @@ machine-readable, with the ruling adopted. Referenced from `RULES.md` as `[A#]`.
   tie-breaker).
 - **[A59] Armors/hammers and the tie-breaker.** "Most Race tokens" counts
   race tokens only — not armors, hammers, monsters, or figures.
+- **[A61] Vanishing while an older race is In Decline.** The decline
+  procedure removes the previous In-Decline race first, then the Vanishing
+  race is removed entirely; the player ends the turn with no races on the
+  board (following the manual's literal sequence — keeping the older race
+  would be a stronger reading with no textual support).
+- **[A62] Reborn onto the River.** A declined Kraken can hold river regions;
+  Reborn would replace those tokens with the new Active race, which may not
+  occupy the river. Ruling: Reborn may not target a river region unless the
+  Active race is Kraken (found via self-play; the manual never contemplates
+  the combination).
+- **[A63] Balrog vs. monster region.** If the Balrog is sent into a
+  Monster-occupied region, the monsters are destroyed and NO Place/Relic is
+  drawn (the player did not conquer it); the undrawable marker simply stays
+  at the bottom of the face-down stack.
 - **[A60] Multiple simultaneous "once per turn" relics.** Sword + Socks (+
   Doormat reach) may all boost the same single conquest if the player
   controls them; each is consumed for the turn.

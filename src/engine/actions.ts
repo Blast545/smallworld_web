@@ -269,7 +269,15 @@ function legalStartTurn(state: GameState): Action[] {
     if (hasDeclinedPower(state, me, 'reborn') && f.rebornUsed < 2) {
       const tokensAvailable = state.tray[p.active.race] > 0 || p.active.hand > 0;
       if (tokensAvailable) {
+        const map = getMap(state);
         for (const rid of declinedRegionIds(state, me)) {
+          // A62: a non-Kraken active race cannot be reborn onto the River.
+          if (
+            (map.regions[rid] as GameMap['regions'][number]).terrain === 'river' &&
+            p.active.race !== 'kraken'
+          ) {
+            continue;
+          }
           out.push({ type: 'rebornReplace', region: rid });
         }
       }
@@ -925,6 +933,13 @@ function applyRebornReplace(state: GameState, rid: number): void {
   const d = must(p.declined, 'declined race');
   const r = region(state, rid);
   if (r.owner !== me || !r.inDecline || r.tokens === 0) throw new Error('not your declined region');
+  const map = getMap(state);
+  if (
+    (map.regions[rid] as GameMap['regions'][number]).terrain === 'river' &&
+    a.race !== 'kraken'
+  ) {
+    throw new Error('cannot be reborn onto the River (A62)');
+  }
   // Token from tray, else from hand (A10).
   if (state.tray[a.race] > 0) state.tray[a.race] -= 1;
   else if (a.hand > 0) a.hand -= 1;
@@ -1244,9 +1259,11 @@ function applyConquer(
   const hammers = a.race === 'ironDwarves' ? Math.min(a.hammerPool, cost - 1) : 0;
   const real = cost - hammers;
   const socks = boosts.useSocks || boosts.bagAs === 'stinkyTrollsSocks';
-  markBoostsUsed(state, rid, boosts);
   const firstConquest = reach.entering;
   resolveConquest(state, me, rid, real, hammers, { socks });
+  // Relic/Bag movement happens after resolution so the attacker's own Bag is
+  // not bounced back to hand by the region changing owners.
+  markBoostsUsed(state, rid, boosts);
   log(state, me, `${playerName(state, me)} conquers region ${rid} with ${cost} token(s).`);
 
   // Cultists: the Great Ancient appears in their first conquered region.
@@ -1277,8 +1294,8 @@ function applyFinalConquest(state: GameState, rid: number, boosts: ConquestBoost
     const hammers = a.race === 'ironDwarves' ? a.hammerPool : 0;
     const real = a.hand;
     const socks = boosts.useSocks || boosts.bagAs === 'stinkyTrollsSocks';
-    markBoostsUsed(state, rid, boosts);
     resolveConquest(state, me, rid, real, hammers, { socks });
+    markBoostsUsed(state, rid, boosts);
     log(
       state,
       me,
