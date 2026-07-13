@@ -27,6 +27,7 @@ export function freshTurnFlags(): TurnFlags {
     ringRegion: null,
     bagRingRegion: null,
     altarUsed: false,
+    withdrawsUsed: 0,
     pentacleRegion: null,
     balrogReturn: null,
   };

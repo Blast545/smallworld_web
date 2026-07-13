@@ -222,8 +222,10 @@ describe('Kraken', () => {
     occupy(s, 0, river[0] as number, 2);
     setPhase(s, 'conquest');
     let cur = applyAction(s, { type: 'endConquest' });
-    // River NOT emptied for kraken.
-    expect(cur.regions[river[0] as number]?.tokens).toBe(2);
+    // River NOT force-emptied for kraken (the redeploy pickup frees the
+    // garrison down to 1 like everywhere else, but the region stays theirs).
+    expect(cur.regions[river[0] as number]?.owner).toBe(0);
+    expect(cur.regions[river[0] as number]?.tokens).toBe(1);
     const hand = cur.players[0]?.active?.hand ?? 0;
     if (hand > 0)
       cur = applyAction(cur, { type: 'deploy', region: river[0] as number, count: hand });

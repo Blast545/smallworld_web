@@ -5,7 +5,15 @@
 import { useMemo, useState } from 'react';
 import type { JSX } from 'react';
 import { getLegalActions, visibleCombos } from '../engine/actions';
-import { MARKERS, POWERS, RACES, TERRAIN_NAMES } from '../engine/data';
+import {
+  MARKERS,
+  POWER_HELP,
+  POWERS,
+  RACE_HELP,
+  RACES,
+  TERRAIN_NAMES,
+} from '../engine/data';
+import { HelpSheet } from './Help';
 import type { GameMap } from '../engine/maps';
 import { getMap } from '../engine/setup';
 import { getScores } from '../engine/scoring';
@@ -38,6 +46,7 @@ export function Game({ store, onExit, onShowRules }: GameProps): JSX.Element {
   const [mode, setMode] = useState<RegionMode>({ kind: 'none' });
   const [pendingChoice, setPendingChoice] = useState<Action[] | null>(null);
   const [tab, setTab] = useState<'board' | 'log'>('board');
+  const [help, setHelp] = useState<'races' | 'powers' | null>(null);
 
   const say = (text: string): void => {
     setNotice(text);
@@ -198,9 +207,12 @@ export function Game({ store, onExit, onShowRules }: GameProps): JSX.Element {
             doAction={doAction}
             me={{ coins: me?.coins ?? 0 }}
             say={say}
+            showHelp={setHelp}
           />
         )}
       </footer>
+
+      {help && <HelpSheet kind={help} onClose={() => setHelp(null)} />}
 
       {pendingChoice && (
         <div className="sheet" role="dialog" aria-label="choose how to conquer">
@@ -307,13 +319,30 @@ interface ControlsProps {
   doAction: (a: Action) => void;
   me: { coins: number };
   say: (t: string) => void;
+  showHelp: (h: 'races' | 'powers') => void;
 }
 
-function HumanControls({ state, legal, mode, setMode, doAction, me }: ControlsProps): JSX.Element {
+function HumanControls({
+  state,
+  legal,
+  mode,
+  setMode,
+  doAction,
+  me,
+  showHelp,
+}: ControlsProps): JSX.Element {
   const has = (t: Action['type']): boolean => legal.some((a) => a.type === t);
 
   if (state.phase === 'pickCombo') {
-    return <ComboPicker state={state} legal={legal} doAction={doAction} coins={me.coins} />;
+    return (
+      <ComboPicker
+        state={state}
+        legal={legal}
+        doAction={doAction}
+        coins={me.coins}
+        showHelp={showHelp}
+      />
+    );
   }
   if (state.phase === 'mimeSwap') {
     return <MimePicker state={state} legal={legal} doAction={doAction} />;
@@ -389,9 +418,11 @@ function HumanControls({ state, legal, mode, setMode, doAction, me }: ControlsPr
       return (
         <div className="row">
           <div className="hint">
-            ✋{hand} to place — tap your regions (+1 each).
-            {armor > 0 ? ` 🛡️${armor} armors.` : ''}
+            Reorganize all your troops: ✋{hand} in hand — use +/− below or tap regions on the
+            board (+1).
+            {armor > 0 ? ` 🛡️${armor} armors to place.` : ''}
           </div>
+          <GarrisonEditor state={state} legal={legal} doAction={doAction} />
           {armorLegal && (
             <button
               className="big"
@@ -462,21 +493,96 @@ function confirmDecline(): boolean {
 // the same tap plumbing as conquests; Game.onTapRegion covers types listed in
 // `wanted` when a mode is active because mode.type is included there.
 
+/** Per-region +/- troop editor used during the redeployment phases. */
+function GarrisonEditor({
+  state,
+  legal,
+  doAction,
+}: {
+  state: GameState;
+  legal: Action[];
+  doAction: (a: Action) => void;
+}): JSX.Element {
+  const map = getMap(state);
+  const rows: { region: number; tokens: number; plus: Action | null; minus: Action | null }[] =
+    [];
+  const seen = new Set<number>();
+  for (const a of legal) {
+    if ((a.type === 'deploy' || a.type === 'withdraw') && !seen.has(a.region)) {
+      seen.add(a.region);
+      rows.push({
+        region: a.region,
+        tokens: state.regions[a.region]?.tokens ?? 0,
+        plus:
+          legal.find((x) => x.type === 'deploy' && x.region === a.region && x.count === 1) ?? null,
+        minus:
+          legal.find((x) => x.type === 'withdraw' && x.region === a.region && x.count === 1) ??
+          null,
+      });
+    }
+  }
+  rows.sort((a, b) => a.region - b.region);
+  if (rows.length === 0) return <></>;
+  return (
+    <div className="garrison" data-testid="garrison-editor">
+      {rows.map((row) => (
+        <div className="garrison-row" key={row.region}>
+          <span className="garrison-name">
+            #{row.region} {TERRAIN_NAMES[(map.regions[row.region] as GameMap['regions'][number]).terrain]}
+          </span>
+          <button
+            className="step"
+            aria-label={`remove a token from region ${row.region}`}
+            disabled={!row.minus}
+            data-testid={`minus-${row.region}`}
+            onClick={() => row.minus && doAction(row.minus)}
+          >
+            −
+          </button>
+          <span className="garrison-count">{row.tokens}</span>
+          <button
+            className="step"
+            aria-label={`add a token to region ${row.region}`}
+            disabled={!row.plus}
+            data-testid={`plus-${row.region}`}
+            onClick={() => row.plus && doAction(row.plus)}
+          >
+            +
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function ComboPicker({
   state,
   legal,
   doAction,
   coins,
+  showHelp,
 }: {
   state: GameState;
   legal: Action[];
   doAction: (a: Action) => void;
   coins: number;
+  showHelp: (h: 'races' | 'powers') => void;
 }): JSX.Element {
   const combos = visibleCombos(state);
   return (
     <div className="combos" data-testid="combo-picker">
-      <div className="hint">Pick a Race &amp; Power combo (🪙{coins}):</div>
+      <div className="hint">
+        Pick a Race &amp; Power combo (🪙{coins}). The top one is free; each lower one costs 1
+        coin more.
+      </div>
+      <div className="helpbuttons">
+        <button className="big" data-testid="help-races" onClick={() => showHelp('races')}>
+          ℹ️ Troop races
+        </button>
+        <button className="big" data-testid="help-powers" onClick={() => showHelp('powers')}>
+          ℹ️ Power modifiers
+        </button>
+      </div>
       {combos.map((c) => {
         const action = legal.find((a) => a.type === 'pickCombo' && a.combo === c.index);
         const tokens = RACES[c.banner].banner + (c.power ? POWERS[c.power].value : 0);
@@ -493,9 +599,11 @@ function ComboPicker({
               {c.power ? ` + ${POWERS[c.power].name}` : ''}
             </span>
             <span className="combo-sub">
-              {tokens} tokens · cost {c.cost}
+              {tokens} tokens · cost {c.cost} coin{c.cost === 1 ? '' : 's'}
               {c.coins > 0 ? ` · carries 🪙${c.coins}` : ''}
             </span>
+            <span className="combo-desc">⚔️ {RACE_HELP[c.banner]}</span>
+            {c.power && <span className="combo-desc">✨ {POWER_HELP[c.power]}</span>}
           </button>
         );
       })}

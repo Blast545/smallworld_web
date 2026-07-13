@@ -250,6 +250,74 @@ input {
   color: var(--muted);
   font-size: 12px;
 }
+.combo-desc {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+  white-space: normal;
+}
+.helpbuttons {
+  display: flex;
+  gap: 6px;
+}
+.helpbuttons .big {
+  margin-top: 0;
+}
+
+/* ---------- help sheets ---------- */
+.helpentry {
+  border-bottom: 1px solid #453764;
+  padding: 8px 0;
+}
+.helpname {
+  font-weight: 700;
+}
+.helpvalue {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 12px;
+  margin-left: 6px;
+}
+.helptext {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+/* ---------- garrison editor ---------- */
+.garrison {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 22vh;
+  overflow-y: auto;
+}
+.garrison-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel2);
+  border-radius: var(--radius);
+  padding: 2px 8px;
+}
+.garrison-name {
+  flex: 1;
+  font-size: 13px;
+  color: var(--muted);
+}
+.garrison-count {
+  min-width: 24px;
+  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+button.step {
+  min-width: 44px;
+  min-height: 44px;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+}
 
 /* ---------- sheet ---------- */
 .sheet {

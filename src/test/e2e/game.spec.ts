@@ -41,7 +41,7 @@ async function humanStep(page: Page): Promise<boolean> {
   const endConquest = page.getByTestId('end-conquest');
   if (await endConquest.isVisible().catch(() => false)) {
     // Conquer one highlighted region per turn when possible, then stop.
-    const highlighted = page.locator('g[data-hl="1"] rect').first();
+    const highlighted = page.locator('g[data-hl="1"] .tap').first();
     if (await highlighted.isVisible().catch(() => false)) {
       await highlighted.click();
       // A variant sheet may open: take the first option.
@@ -64,8 +64,14 @@ async function humanStep(page: Page): Promise<boolean> {
       return true;
     }
   }
-  // Redeploy / defender retreat / balrog / volcano: tap a highlighted region.
-  const highlighted = page.locator('g[data-hl="1"] rect').first();
+  // Redeploy: prefer the garrison editor's + buttons when present.
+  const plus = page.locator('[data-testid^="plus-"]:enabled').first();
+  if (await plus.isVisible().catch(() => false)) {
+    await plus.click();
+    return true;
+  }
+  // Defender retreat / balrog / volcano: tap a highlighted region.
+  const highlighted = page.locator('g[data-hl="1"] .tap').first();
   if (await highlighted.isVisible().catch(() => false)) {
     await highlighted.click();
     return true;

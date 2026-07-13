@@ -1,4 +1,5 @@
-// SVG board rendered from the map's cell grid. Pure presentation: taps are
+// SVG board rendered from the map's cell grid. Each region is drawn as a
+// single traced outline (no internal grid seams). Pure presentation: taps are
 // forwarded to the Game screen, which decides what (if anything) they mean.
 
 import type { JSX } from 'react';
@@ -39,12 +40,114 @@ function cells(map: GameMap, regionId: number): Cell[] {
   return region.cells.map((cell) => ({ r: Math.floor(cell / map.cols), c: cell % map.cols }));
 }
 
-/** Centroid cell of a region (largest-cluster-ish: median cell). */
+/**
+ * Trace the boundary of a region (a set of grid cells) into SVG path loops.
+ * Directed edges keep the region on the right of the travel direction
+ * (clockwise loops in screen coordinates); at pinch points the walk prefers
+ * the tightest right turn so it hugs the region.
+ */
+const outlineCache = new Map<string, string>();
+
+export function regionOutline(map: GameMap, regionId: number): string {
+  const key = `${map.id}:${regionId}`;
+  const hit = outlineCache.get(key);
+  if (hit) return hit;
+
+  const inRegion = new Set<number>();
+  for (const c of cells(map, regionId)) inRegion.add(c.r * map.cols + c.c);
+  const has = (r: number, c: number): boolean =>
+    r >= 0 && c >= 0 && r < map.rows && c < map.cols && inRegion.has(r * map.cols + c);
+
+  // Directed boundary edges between lattice points (grid units).
+  type Pt = string; // "x,y"
+  const edges = new Map<Pt, [number, number, number, number][]>(); // start -> [x1,y1,x2,y2]
+  const addEdge = (x1: number, y1: number, x2: number, y2: number): void => {
+    const k = `${x1},${y1}`;
+    const list = edges.get(k) ?? [];
+    list.push([x1, y1, x2, y2]);
+    edges.set(k, list);
+  };
+  for (const { r, c } of cells(map, regionId)) {
+    if (!has(r - 1, c)) addEdge(c, r, c + 1, r); // top, rightward
+    if (!has(r, c + 1)) addEdge(c + 1, r, c + 1, r + 1); // right, downward
+    if (!has(r + 1, c)) addEdge(c + 1, r + 1, c, r + 1); // bottom, leftward
+    if (!has(r, c - 1)) addEdge(c, r + 1, c, r); // left, upward
+  }
+
+  const loops: string[] = [];
+  const takeEdge = (
+    from: Pt,
+    prevDir: [number, number] | null,
+  ): [number, number, number, number] | null => {
+    const list = edges.get(from);
+    if (!list || list.length === 0) return null;
+    let pick = 0;
+    if (prevDir && list.length > 1) {
+      // Prefer the tightest right turn: cw(prev), straight, ccw(prev).
+      const prefs: [number, number][] = [
+        [-prevDir[1], prevDir[0]],
+        [prevDir[0], prevDir[1]],
+        [prevDir[1], -prevDir[0]],
+      ];
+      outer: for (const pref of prefs) {
+        for (let i = 0; i < list.length; i++) {
+          const e = list[i] as [number, number, number, number];
+          const dir: [number, number] = [Math.sign(e[2] - e[0]), Math.sign(e[3] - e[1])];
+          if (dir[0] === pref[0] && dir[1] === pref[1]) {
+            pick = i;
+            break outer;
+          }
+        }
+      }
+    }
+    const edge = list.splice(pick, 1)[0] as [number, number, number, number];
+    if (list.length === 0) edges.delete(from);
+    return edge;
+  };
+
+  for (;;) {
+    const startKey = edges.keys().next().value as Pt | undefined;
+    if (startKey === undefined) break;
+    const first = takeEdge(startKey, null);
+    if (!first) break;
+    const pts: [number, number][] = [
+      [first[0], first[1]],
+      [first[2], first[3]],
+    ];
+    let dir: [number, number] = [Math.sign(first[2] - first[0]), Math.sign(first[3] - first[1])];
+    for (;;) {
+      const cur = pts[pts.length - 1] as [number, number];
+      if (cur[0] === first[0] && cur[1] === first[1]) break;
+      const next = takeEdge(`${cur[0]},${cur[1]}`, dir);
+      if (!next) break; // should not happen on a well-formed boundary
+      dir = [Math.sign(next[2] - next[0]), Math.sign(next[3] - next[1])];
+      pts.push([next[2], next[3]]);
+    }
+    // Collapse collinear points for a shorter path.
+    const compact: [number, number][] = [];
+    for (const p of pts.slice(0, -1)) {
+      const a = compact[compact.length - 2];
+      const b = compact[compact.length - 1];
+      if (a && b && Math.sign(b[0] - a[0]) === Math.sign(p[0] - b[0]) && Math.sign(b[1] - a[1]) === Math.sign(p[1] - b[1])) {
+        compact[compact.length - 1] = p;
+      } else {
+        compact.push(p);
+      }
+    }
+    loops.push(
+      `M${compact.map(([x, y]) => `${x * CELL},${y * CELL}`).join('L')}Z`,
+    );
+  }
+  const d = loops.join('');
+  outlineCache.set(key, d);
+  return d;
+}
+
+/** Cell nearest the centroid, so labels sit inside L-shaped regions. */
 function labelPos(map: GameMap, regionId: number): { x: number; y: number } {
   const cs = cells(map, regionId);
   const sx = cs.reduce((a, c) => a + c.c, 0) / cs.length;
   const sy = cs.reduce((a, c) => a + c.r, 0) / cs.length;
-  // Snap to the cell nearest the centroid so the label sits inside the region.
   let best = cs[0] as Cell;
   let bestD = Infinity;
   for (const c of cs) {
@@ -55,30 +158,6 @@ function labelPos(map: GameMap, regionId: number): { x: number; y: number } {
     }
   }
   return { x: (best.c + 0.5) * CELL, y: (best.r + 0.5) * CELL };
-}
-
-/** Border segments between different regions (and the outer rim). */
-function borderPath(map: GameMap): string {
-  const parts: string[] = [];
-  const key = (r: number, c: number): number | null => {
-    if (r < 0 || c < 0 || r >= map.rows || c >= map.cols) return null;
-    const ch = map.regions.findIndex((rg) => rg.cells.includes(r * map.cols + c));
-    return ch;
-  };
-  for (let r = 0; r < map.rows; r++) {
-    for (let c = 0; c < map.cols; c++) {
-      const here = key(r, c);
-      if (key(r, c + 1) !== here) {
-        parts.push(`M${(c + 1) * CELL},${r * CELL}v${CELL}`);
-      }
-      if (key(r + 1, c) !== here) {
-        parts.push(`M${c * CELL},${(r + 1) * CELL}h${CELL}`);
-      }
-      if (c === 0) parts.push(`M0,${r * CELL}v${CELL}`);
-      if (r === 0) parts.push(`M${c * CELL},0h${CELL}`);
-    }
-  }
-  return parts.join('');
 }
 
 function figureGlyph(kind: string): string {
@@ -127,49 +206,59 @@ export function Board({ map, state, highlights, selected, onTapRegion }: BoardPr
       aria-label="game board"
       data-testid="board"
     >
-      {map.regions.map((region) => (
-        <g
-          key={region.id}
-          onClick={() => onTapRegion(region.id)}
-          data-testid={`region-${region.id}`}
-          data-hl={highlights.has(region.id) ? '1' : undefined}
-        >
-          {cells(map, region.id).map((cell, i) => (
-            <rect
-              key={i}
-              x={cell.c * CELL}
-              y={cell.r * CELL}
-              width={CELL}
-              height={CELL}
+      {/* region fills: one seamless shape per region */}
+      {map.regions.map((region) => {
+        const pos = labelPos(map, region.id);
+        return (
+          <g
+            key={region.id}
+            onClick={() => onTapRegion(region.id)}
+            data-testid={`region-${region.id}`}
+            data-hl={highlights.has(region.id) ? '1' : undefined}
+          >
+            <path
+              d={regionOutline(map, region.id)}
               fill={TERRAIN_FILL[region.terrain]}
+              fillRule="evenodd"
+              stroke="#0d0a14"
+              strokeWidth={3}
+              strokeLinejoin="round"
               opacity={
                 highlights.size > 0 && !highlights.has(region.id) && region.terrain !== 'chasm'
                   ? 0.45
                   : 1
               }
             />
-          ))}
-        </g>
-      ))}
-      <path d={borderPath(map)} stroke="#0d0a14" strokeWidth={3} fill="none" pointerEvents="none" />
-      {/* highlight outlines */}
+            {/* Invisible anchor: guaranteed to sit inside the (possibly
+                concave) region, giving tests and assistive tech a stable
+                tap point. */}
+            <rect
+              className="tap"
+              x={pos.x - 14}
+              y={pos.y - 14}
+              width={28}
+              height={28}
+              fill="transparent"
+              pointerEvents="all"
+            />
+          </g>
+        );
+      })}
+      {/* highlight outlines on top */}
       {map.regions
         .filter((r) => highlights.has(r.id) || selected === r.id)
-        .map((r) =>
-          cells(map, r.id).map((cell, i) => (
-            <rect
-              key={`${r.id}-${i}`}
-              x={cell.c * CELL + 1.5}
-              y={cell.r * CELL + 1.5}
-              width={CELL - 3}
-              height={CELL - 3}
-              fill="none"
-              stroke={selected === r.id ? '#ffffff' : '#ffd54a'}
-              strokeWidth={3}
-              pointerEvents="none"
-            />
-          )),
-        )}
+        .map((r) => (
+          <path
+            key={`hl-${r.id}`}
+            d={regionOutline(map, r.id)}
+            fill="none"
+            fillRule="evenodd"
+            stroke={selected === r.id ? '#ffffff' : '#ffd54a'}
+            strokeWidth={3.5}
+            strokeLinejoin="round"
+            pointerEvents="none"
+          />
+        ))}
       {/* region contents */}
       {map.regions.map((region) => {
         const rs = state.regions[region.id] as RegionState;

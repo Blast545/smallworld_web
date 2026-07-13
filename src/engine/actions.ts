@@ -467,6 +467,9 @@ function balrogTargets(state: GameState): number[] {
   return out;
 }
 
+/** Bound on undo-withdrawals per turn; guarantees phase termination (A64). */
+const WITHDRAW_CAP = 30;
+
 function legalRedeploy(state: GameState): Action[] {
   const me = state.activePlayer;
   const p = must(state.players[me], 'player');
@@ -476,6 +479,12 @@ function legalRedeploy(state: GameState): Action[] {
   if (a && own.length > 0) {
     for (const rid of own) {
       for (let c = 1; c <= a.hand; c++) out.push({ type: 'deploy', region: rid, count: c });
+      if (state.turnFlags.withdrawsUsed < WITHDRAW_CAP) {
+        const r = region(state, rid);
+        for (let c = 1; c <= r.tokens - 1; c++) {
+          out.push({ type: 'withdraw', region: rid, count: c });
+        }
+      }
       if (p.armorHand > 0) out.push({ type: 'deployArmor', region: rid });
     }
   }
@@ -488,13 +497,18 @@ function legalDeclineRedeploy(state: GameState): Action[] {
   const out: Action[] = [];
   const pool = state.declineTombPool;
   const own = declinedRegionIds(state, me);
-  if (pool > 0 && own.length > 0) {
+  if (own.length > 0) {
     for (const rid of own) {
       for (let c = 1; c <= pool; c++) out.push({ type: 'deploy', region: rid, count: c });
+      if (state.turnFlags.withdrawsUsed < WITHDRAW_CAP) {
+        const r = region(state, rid);
+        for (let c = 1; c <= r.tokens - 1; c++) {
+          out.push({ type: 'withdraw', region: rid, count: c });
+        }
+      }
     }
-  } else {
-    out.push({ type: 'endTurn' });
   }
+  if (pool === 0) out.push({ type: 'endTurn' });
   return out;
 }
 
@@ -645,6 +659,9 @@ export function applyAction(prev: GameState, action: Action): GameState {
       break;
     case 'deploy':
       applyDeploy(state, action.region, action.count);
+      break;
+    case 'withdraw':
+      applyWithdraw(state, action.region, action.count);
       break;
     case 'deployArmor':
       applyDeployArmor(state, action.region);
@@ -1474,6 +1491,15 @@ function startRedeployPhase(state: GameState): void {
         log(state, me, `Shield: +${gain} Mushroom Armor(s).`);
       }
     }
+    // Troop Redeployment is a FULL reorganization: every token on the board
+    // may move, as long as one stays per region (rulebook p.7). Free all
+    // garrisons down to 1 into the hand for redistribution. Silver Hammers
+    // stay on the map until the end of the redeployment.
+    for (const rid of activeRegionIds(state, me)) {
+      const r = region(state, rid);
+      a.hand += r.tokens - 1;
+      r.tokens = 1;
+    }
   }
   state.phase = 'redeploy';
 }
@@ -1498,6 +1524,29 @@ function applyDeploy(state: GameState, rid: number, count: number): void {
     state.declineTombPool = pool - count;
     r.tokens += count;
   }
+}
+
+function applyWithdraw(state: GameState, rid: number, count: number): void {
+  requirePhase(state, 'redeploy', 'declineRedeploy');
+  const me = state.activePlayer;
+  const p = must(state.players[me], 'player');
+  const f = state.turnFlags;
+  if (f.withdrawsUsed >= 30) throw new Error('withdraw limit reached (A64)');
+  const r = region(state, rid);
+  if (state.phase === 'redeploy') {
+    const a = must(p.active, 'active race');
+    if (r.owner !== me || r.inDecline || r.tokens === 0) throw new Error('not your active region');
+    if (count < 1 || count > r.tokens - 1) throw new Error('one token must remain');
+    r.tokens -= count;
+    a.hand += count;
+  } else {
+    if (r.owner !== me || !r.inDecline || r.tokens === 0)
+      throw new Error('not your declined region');
+    if (count < 1 || count > r.tokens - 1) throw new Error('one token must remain');
+    r.tokens -= count;
+    state.declineTombPool += count;
+  }
+  f.withdrawsUsed += 1;
 }
 
 function applyDeployArmor(state: GameState, rid: number): void {

@@ -67,6 +67,12 @@ function pruneCandidates(_state: GameState, legal: Action[]): Action[] {
     }
   }
   for (const a of legal) {
+    if (a.type === 'withdraw') {
+      // Withdrawing is a human undo affordance: the redeploy pickup already
+      // freed every garrison, so any reachable distribution is reachable by
+      // deploys alone. Skipping it also keeps the bot loop-free.
+      continue;
+    }
     if (a.type === 'deploy' || a.type === 'defDeploy') {
       const key = `${a.type}:${a.region}`;
       if (a.count === 1 || a.count === maxCount.get(key)) out.push(a);
@@ -186,6 +192,8 @@ function describe(state: GameState, _me: number, action: Action): string {
       return `unleashed the Balrog on #${action.region}`;
     case 'deploy':
       return `garrisoned ${action.count} token(s) in #${action.region}`;
+    case 'withdraw':
+      return `pulled ${action.count} token(s) back from #${action.region}`;
     case 'deployArmor':
       return `armored #${action.region}`;
     case 'endTurn':

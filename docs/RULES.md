@@ -300,10 +300,14 @@ failed final-conquest roll with Doormat leaves it where it was.
 - **Shield**: +1 Mushroom Armor from tray (max 8 in existence) per Mushroom
   Forest region occupied at end of conquest phase, into hand; deploy any
   number into occupied regions during redeployment.
-- Player freely distributes hand tokens among regions his Active race
-  occupies (each must keep ≥ 1). He may not abandon regions now [A29]; if he
-  has tokens in hand but occupies no regions, tokens stay in hand (re-entry
-  next turn as First Conquest).
+- Redeployment is a FULL reorganization of every token on the board: the
+  player "may freely redeploy the Race tokens he has on the board", each
+  region keeping ≥ 1. The engine models this by freeing all garrisons down
+  to 1 into the hand at the start of the phase, then letting the player
+  distribute freely (any legal final distribution is reachable); a bounded
+  `withdraw` action exists as a UI undo [A64]. He may not abandon regions
+  now [A29]; if he has tokens in hand but occupies no regions, tokens stay
+  in hand (re-entry next turn as First Conquest).
 - **Iron Dwarves**: at end of redeployment, take 1 Silver Hammer from the
   supply per Mine region occupied (max 7 total in existence), then all
   hammers on the map return to the player's hammer pool; every region must

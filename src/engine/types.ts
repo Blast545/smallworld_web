@@ -108,6 +108,12 @@ export interface TurnFlags {
   ringRegion: number | null; // real Ring placement this turn
   bagRingRegion: number | null; // Bag-as-Ring placement this turn
   altarUsed: boolean;
+  /**
+   * Withdrawals made this redeploy phase. Withdrawing is a UI convenience
+   * (the redeploy pickup already frees every garrison); the bound guarantees
+   * the phase terminates even under random-legal-action play.
+   */
+  withdrawsUsed: number;
   /** Region the Wickedest Pentacle was just discovered in (balrogPlace phase). */
   pentacleRegion: number | null;
   /** Where to resume after balrogPlace: back to conquest, or straight to redeploy. */
@@ -198,6 +204,7 @@ export type Action =
   | { type: 'endConquest' }
   | { type: 'placeBalrog'; region: number }
   | { type: 'deploy'; region: number; count: number }
+  | { type: 'withdraw'; region: number; count: number }
   | { type: 'deployArmor'; region: number }
   | { type: 'endTurn' }
   | { type: 'placeQueen'; region: number }

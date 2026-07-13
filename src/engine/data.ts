@@ -158,6 +158,57 @@ export const MONSTER_SUPPLY = 14;
 export const ARMOR_SUPPLY = 8;
 export const HAMMER_SUPPLY = 7;
 
+/** One-line player-facing summaries of each race's ability. */
+export const RACE_HELP: Record<RaceId, string> = {
+  cultists:
+    'Their first conquest summons the immune Great Ancient; regions next to it cost 1 less to conquer.',
+  drow: '+1 coin per region of theirs that borders no other race and no monsters.',
+  flames:
+    'Erupt from a Volcano chasm; regions linked to it through their territory are conquered as if empty.',
+  gnomes:
+    'Their regions cannot be attacked using powers, relics or places — only plain adjacent force.',
+  ironDwarves:
+    'Forge a Silver Hammer per Mine region each turn; hammers pay for conquests (never defense).',
+  kraken: 'The only race that may occupy and score River regions — even once In Decline.',
+  liches:
+    'Opponents pay them 1 coin to conquer their In-Decline regions; a broke player cannot attack them at all.',
+  lizardmen: 'Swim through unoccupied River regions to conquer distant shores.',
+  mudmen: 'Grow 1 new token per Mudpool region they hold, every redeployment.',
+  mummies: 'A huge horde (10), but every conquest costs 1 extra token.',
+  ogres: 'Conquer any region with 1 less token than normal (minimum 1).',
+  shadowMimes: 'When picked, may immediately copy the special power of another visible combo.',
+  shrooms: '+1 coin per Mushroom Forest region they hold.',
+  spiderines:
+    'All regions bordering a Chasm count as adjacent to them — and are valid entry points.',
+  willOWisps:
+    'May roll the reinforcement die before any conquest of, or next to, their Mystic Crystal regions.',
+};
+
+/** One-line player-facing summaries of each special power. */
+export const POWER_HELP: Record<PowerId, string> = {
+  adventurous: '+1 coin per Popular Place region you hold at turn’s end.',
+  fisher: '+1 coin per complete pair of riverside (coastal) regions you hold.',
+  flocking: '+2 coins if all your regions form one connected group.',
+  frightened: '+1 coin per region you garrison with 3 or more tokens.',
+  immortal: 'Lose no tokens when your regions are conquered — every survivor redeploys.',
+  magic: 'The Bag-o’-Many-Things copies any one Relic in play, once per turn.',
+  martyr: '+1 coin every time an opponent conquers one of your regions.',
+  mining: '+1 coin per Mine region you hold.',
+  muddy: '+1 coin per Mudpool region you hold — even In Decline.',
+  mystic: '+1 coin per Mystic Crystal region you hold.',
+  quarreling: '+1 coin per separate group your regions split into.',
+  reborn: 'Once In Decline: each turn, revive 1–2 of their regions with your new race.',
+  royal: 'Your Queen makes one of your regions immune to attack.',
+  shield: 'Gain a Mushroom Armor per Mushroom Forest region: each adds +1 defense, even In Decline.',
+  stone: '+1 coin per Black Mountain region you hold.',
+  thieving: 'Steal 1 coin from every player whose active troops border yours.',
+  tomb: 'Keep ALL your tokens on the map when going In Decline, and redeploy them once.',
+  vampire: 'Once per turn per opponent: replace a lone enemy token with one of yours.',
+  vanishing: 'When declining, score 2 coins per region — then the race vanishes entirely.',
+  vengeful: 'Whoever attacks you can be attacked back next turn at 1 less token.',
+  wise: '+2 coins at the end of every turn while In Decline on the board.',
+};
+
 export const TERRAIN_NAMES: Record<Terrain, string> = {
   mine: 'Mine',
   mushroom: 'Mushroom Forest',

@@ -328,6 +328,70 @@ describe('redeployment', () => {
     expect(next.regions[land]?.tokens).toBe(8);
   });
 
+  it('redeployment is a full reorganization of every token on the board', () => {
+    const s = fresh(2, 3);
+    giveActive(s, 0, 'liches', 'stone', 0);
+    const entry = plainEntry(s);
+    const other = neighborsOf(s, entry).find(
+      (n) =>
+        getMap(s).regions[n]?.terrain !== 'chasm' &&
+        getMap(s).regions[n]?.terrain !== 'river' &&
+        (s.regions[n]?.monsters ?? 0) === 0,
+    );
+    if (other === undefined) throw new Error('need a free neighbor');
+    occupy(s, 0, entry, 5);
+    occupy(s, 0, other, 2);
+    setPhase(s, 'conquest');
+    let cur = applyAction(s, { type: 'endConquest' });
+    // Every garrison was freed down to 1: 4 + 1 tokens now in hand.
+    expect(cur.regions[entry]?.tokens).toBe(1);
+    expect(cur.regions[other]?.tokens).toBe(1);
+    expect(cur.players[0]?.active?.hand).toBe(5);
+    // The whole force can move to the OTHER region — the rulebook's free
+    // redeployment, not just leftovers from the conquest.
+    cur = applyAction(cur, { type: 'deploy', region: other, count: 5 });
+    expect(cur.regions[other]?.tokens).toBe(6);
+    const done = applyAction(cur, { type: 'endTurn' });
+    expect(done.regions[entry]?.tokens).toBe(1);
+    expect(done.regions[other]?.tokens).toBe(6);
+  });
+
+  it('withdraw (the − button) puts deployed tokens back in hand, never below 1', () => {
+    const s = fresh(2, 3);
+    giveActive(s, 0, 'liches', 'stone', 0);
+    const entry = plainEntry(s);
+    occupy(s, 0, entry, 4);
+    setPhase(s, 'conquest');
+    let cur = applyAction(s, { type: 'endConquest' });
+    expect(cur.players[0]?.active?.hand).toBe(3);
+    cur = applyAction(cur, { type: 'deploy', region: entry, count: 3 });
+    cur = applyAction(cur, { type: 'withdraw', region: entry, count: 2 });
+    expect(cur.regions[entry]?.tokens).toBe(2);
+    expect(cur.players[0]?.active?.hand).toBe(2);
+    // Withdrawing the last token is never offered.
+    expectNotLegal(cur, (a) => a.type === 'withdraw' && a.count >= 2);
+    // endTurn still demands an empty hand.
+    expectNotLegal(cur, (a) => a.type === 'endTurn');
+    cur = applyAction(cur, { type: 'deploy', region: entry, count: 2 });
+    expect(applyAction(cur, { type: 'endTurn' }).phase).toBe('endOfTurn');
+  });
+
+  it('withdraw is bounded per turn so the phase always terminates (A64)', () => {
+    const s = fresh(2, 3);
+    giveActive(s, 0, 'liches', 'stone', 0);
+    const entry = plainEntry(s);
+    occupy(s, 0, entry, 2);
+    setPhase(s, 'conquest');
+    let cur = applyAction(s, { type: 'endConquest' });
+    for (let i = 0; i < 30; i++) {
+      cur = applyAction(cur, { type: 'deploy', region: entry, count: 1 });
+      cur = applyAction(cur, { type: 'withdraw', region: entry, count: 1 });
+    }
+    expectNotLegal(cur, (a) => a.type === 'withdraw');
+    cur = applyAction(cur, { type: 'deploy', region: entry, count: 1 });
+    expect(applyAction(cur, { type: 'endTurn' }).phase).toBe('endOfTurn');
+  });
+
   it('tokens stay in hand when no regions remain (re-entry next turn)', () => {
     const s = fresh(2, 3);
     giveActive(s, 0, 'liches', 'stone', 4);
