@@ -332,11 +332,14 @@ machine-readable, with the ruling adopted. Referenced from `RULES.md` as `[A#]`.
   occupy the river. Ruling: Reborn may not target a river region unless the
   Active race is Kraken (found via self-play; the manual never contemplates
   the combination).
-- **[A64] Redeploy withdraw bound.** Troop Redeployment is modeled as
-  "free every garrison down to 1, then distribute" — exactly the manual's
-  free reorganization. The extra `withdraw` action (the UI's "−" button) is
-  an undo convenience, capped at 30 uses per turn so that random-legal-action
-  self-play provably terminates; the cap is unreachable in real play.
+- **[A64] Redeploy withdraw bound.** Troop Redeployment is modeled with a
+  `withdraw` action (the UI's "−" button) that lifts any token above a
+  region's last one back into hand, alongside `deploy`; together they make
+  the manual's free reorganization of every board token reachable while
+  garrisons stay where the conquests put them. Withdraw is capped at 100
+  uses per turn so that random-legal-action self-play provably terminates;
+  a complete reorganization needs at most 14, so the cap is unreachable in
+  real play.
 - **[A63] Balrog vs. monster region.** If the Balrog is sent into a
   Monster-occupied region, the monsters are destroyed and NO Place/Relic is
   drawn (the player did not conquer it); the undrawable marker simply stays

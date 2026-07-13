@@ -147,9 +147,13 @@ describe('entering in decline', () => {
     setPhase(s, 'startTurn');
     let cur = applyAction(s, { type: 'decline' });
     expect(cur.phase).toBe('declineRedeploy');
-    expect(cur.declineTombPool).toBe(3);
     expect(cur.players[0]?.declined).toEqual({ race: 'ogres', power: 'tomb' });
-    // Move all three spares into the second region.
+    // All tokens kept in place; the final redeployment moves them via
+    // withdraw/deploy (each region keeps at least 1).
+    expect(cur.regions[r1 as number]?.tokens).toBe(4);
+    expect(cur.regions[r1 as number]?.inDecline).toBe(true);
+    cur = applyAction(cur, { type: 'withdraw', region: r1 as number, count: 3 });
+    expect(cur.declineTombPool).toBe(3);
     cur = applyAction(cur, { type: 'deploy', region: r2 as number, count: 3 });
     expect(cur.regions[r2 as number]?.tokens).toBe(4);
     expect(cur.regions[r2 as number]?.inDecline).toBe(true);

@@ -328,7 +328,7 @@ describe('redeployment', () => {
     expect(next.regions[land]?.tokens).toBe(8);
   });
 
-  it('redeployment is a full reorganization of every token on the board', () => {
+  it('redeployment can reorganize every token on the board via withdraw', () => {
     const s = fresh(2, 3);
     giveActive(s, 0, 'liches', 'stone', 0);
     const entry = plainEntry(s);
@@ -343,34 +343,34 @@ describe('redeployment', () => {
     occupy(s, 0, other, 2);
     setPhase(s, 'conquest');
     let cur = applyAction(s, { type: 'endConquest' });
-    // Every garrison was freed down to 1: 4 + 1 tokens now in hand.
-    expect(cur.regions[entry]?.tokens).toBe(1);
-    expect(cur.regions[other]?.tokens).toBe(1);
+    // Garrisons stay exactly where the conquests left them.
+    expect(cur.regions[entry]?.tokens).toBe(5);
+    expect(cur.regions[other]?.tokens).toBe(2);
+    expect(cur.players[0]?.active?.hand).toBe(0);
+    // But the whole force can still move — the rulebook's free redeployment
+    // of every token on the board, not just leftovers from the conquest.
+    cur = applyAction(cur, { type: 'withdraw', region: entry, count: 4 });
+    cur = applyAction(cur, { type: 'withdraw', region: other, count: 1 });
     expect(cur.players[0]?.active?.hand).toBe(5);
-    // The whole force can move to the OTHER region — the rulebook's free
-    // redeployment, not just leftovers from the conquest.
     cur = applyAction(cur, { type: 'deploy', region: other, count: 5 });
-    expect(cur.regions[other]?.tokens).toBe(6);
     const done = applyAction(cur, { type: 'endTurn' });
     expect(done.regions[entry]?.tokens).toBe(1);
     expect(done.regions[other]?.tokens).toBe(6);
   });
 
-  it('withdraw (the − button) puts deployed tokens back in hand, never below 1', () => {
+  it('withdraw (the − button) never empties a region and endTurn wants an empty hand', () => {
     const s = fresh(2, 3);
     giveActive(s, 0, 'liches', 'stone', 0);
     const entry = plainEntry(s);
     occupy(s, 0, entry, 4);
     setPhase(s, 'conquest');
     let cur = applyAction(s, { type: 'endConquest' });
-    expect(cur.players[0]?.active?.hand).toBe(3);
-    cur = applyAction(cur, { type: 'deploy', region: entry, count: 3 });
     cur = applyAction(cur, { type: 'withdraw', region: entry, count: 2 });
     expect(cur.regions[entry]?.tokens).toBe(2);
     expect(cur.players[0]?.active?.hand).toBe(2);
     // Withdrawing the last token is never offered.
     expectNotLegal(cur, (a) => a.type === 'withdraw' && a.count >= 2);
-    // endTurn still demands an empty hand.
+    // endTurn demands an empty hand.
     expectNotLegal(cur, (a) => a.type === 'endTurn');
     cur = applyAction(cur, { type: 'deploy', region: entry, count: 2 });
     expect(applyAction(cur, { type: 'endTurn' }).phase).toBe('endOfTurn');
@@ -383,12 +383,11 @@ describe('redeployment', () => {
     occupy(s, 0, entry, 2);
     setPhase(s, 'conquest');
     let cur = applyAction(s, { type: 'endConquest' });
-    for (let i = 0; i < 30; i++) {
-      cur = applyAction(cur, { type: 'deploy', region: entry, count: 1 });
+    for (let i = 0; i < 100; i++) {
       cur = applyAction(cur, { type: 'withdraw', region: entry, count: 1 });
+      cur = applyAction(cur, { type: 'deploy', region: entry, count: 1 });
     }
     expectNotLegal(cur, (a) => a.type === 'withdraw');
-    cur = applyAction(cur, { type: 'deploy', region: entry, count: 1 });
     expect(applyAction(cur, { type: 'endTurn' }).phase).toBe('endOfTurn');
   });
 

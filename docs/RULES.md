@@ -302,10 +302,11 @@ failed final-conquest roll with Doormat leaves it where it was.
   number into occupied regions during redeployment.
 - Redeployment is a FULL reorganization of every token on the board: the
   player "may freely redeploy the Race tokens he has on the board", each
-  region keeping ≥ 1. The engine models this by freeing all garrisons down
-  to 1 into the hand at the start of the phase, then letting the player
-  distribute freely (any legal final distribution is reachable); a bounded
-  `withdraw` action exists as a UI undo [A64]. He may not abandon regions
+  region keeping ≥ 1. The engine models this with two symmetric actions:
+  `deploy` places hand tokens into an occupied region, `withdraw` lifts any
+  token above a region's last one back into hand (bounded per turn purely
+  for termination, [A64]) — so garrisons stay where the conquests put them
+  and any legal final distribution is reachable. He may not abandon regions
   now [A29]; if he has tokens in hand but occupies no regions, tokens stay
   in hand (re-entry next turn as First Conquest).
 - **Iron Dwarves**: at end of redeployment, take 1 Silver Hammer from the

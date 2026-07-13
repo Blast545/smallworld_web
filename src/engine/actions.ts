@@ -467,8 +467,12 @@ function balrogTargets(state: GameState): number[] {
   return out;
 }
 
-/** Bound on undo-withdrawals per turn; guarantees phase termination (A64). */
-const WITHDRAW_CAP = 30;
+/**
+ * Bound on withdrawals per turn; guarantees the phase terminates even under
+ * random-legal-action play (A64). A complete reorganization of the largest
+ * possible force needs at most 14, so the cap is unreachable in real play.
+ */
+const WITHDRAW_CAP = 100;
 
 function legalRedeploy(state: GameState): Action[] {
   const me = state.activePlayer;
@@ -893,15 +897,11 @@ function applyDecline(state: GameState): void {
   removeOrphanFigures(state);
 
   if (tomb && !vanishing && own.length > 0) {
-    // Tomb: keep all tokens; allow one final redeployment (A37).
-    let pool = 0;
-    for (const rid of own) {
-      const r = region(state, rid);
-      pool += r.tokens - 1;
-      r.tokens = 1;
-    }
-    state.declineTombPool = pool;
-    state.phase = pool > 0 ? 'declineRedeploy' : 'endOfTurn';
+    // Tomb: keep all tokens where they stand; the player may reorganize
+    // them one final time via withdraw/deploy before scoring (A37).
+    const movable = own.reduce((acc, rid) => acc + (region(state, rid).tokens - 1), 0);
+    state.declineTombPool = 0;
+    state.phase = movable > 0 ? 'declineRedeploy' : 'endOfTurn';
     return;
   }
   state.phase = 'endOfTurn';
@@ -1492,14 +1492,11 @@ function startRedeployPhase(state: GameState): void {
       }
     }
     // Troop Redeployment is a FULL reorganization: every token on the board
-    // may move, as long as one stays per region (rulebook p.7). Free all
-    // garrisons down to 1 into the hand for redistribution. Silver Hammers
-    // stay on the map until the end of the redeployment.
-    for (const rid of activeRegionIds(state, me)) {
-      const r = region(state, rid);
-      a.hand += r.tokens - 1;
-      r.tokens = 1;
-    }
+    // may move, as long as one stays per region (rulebook p.7). Garrisons
+    // stay where the conquests put them; the `withdraw` action lifts any
+    // token (above the last one) back into hand, so every legal final
+    // distribution is reachable without disturbing what the player already
+    // likes (A64).
   }
   state.phase = 'redeploy';
 }
@@ -1531,7 +1528,7 @@ function applyWithdraw(state: GameState, rid: number, count: number): void {
   const me = state.activePlayer;
   const p = must(state.players[me], 'player');
   const f = state.turnFlags;
-  if (f.withdrawsUsed >= 30) throw new Error('withdraw limit reached (A64)');
+  if (f.withdrawsUsed >= 100) throw new Error('withdraw limit reached (A64)');
   const r = region(state, rid);
   if (state.phase === 'redeploy') {
     const a = must(p.active, 'active race');

@@ -172,15 +172,6 @@ export function Game({ store, onExit, onShowRules }: GameProps): JSX.Element {
             selected={null}
             onTapRegion={onTapRegion}
           />
-          <button
-            className="legendbtn"
-            aria-label="map legend"
-            title="What do the colors and icons mean?"
-            data-testid="open-legend"
-            onClick={() => setHelp('legend')}
-          >
-            ℹ️
-          </button>
         </div>
       ) : (
         <Log entries={store.uiLog} />
@@ -192,6 +183,15 @@ export function Game({ store, onExit, onShowRules }: GameProps): JSX.Element {
         </button>
         <button className={tab === 'log' ? 'tab active' : 'tab'} onClick={() => setTab('log')} data-testid="tab-log">
           Log
+        </button>
+        <button
+          className="tab tab-icon"
+          aria-label="map legend: what the colors and icons mean"
+          title="What do the colors and icons mean?"
+          data-testid="open-legend"
+          onClick={() => setHelp('legend')}
+        >
+          ℹ️
         </button>
       </div>
 
@@ -428,11 +428,16 @@ function HumanControls({
       return (
         <div className="row">
           <div className="hint">
-            Reorganize all your troops: ✋{hand} in hand — use +/− below or tap regions on the
-            board (+1).
+            {hand > 0
+              ? `Place your ${hand} remaining token(s): use + below or tap regions on the board.`
+              : 'Reorganize freely with +/− (each region keeps at least 1), then end the turn.'}
             {armor > 0 ? ` 🛡️${armor} armors to place.` : ''}
           </div>
-          <GarrisonEditor state={state} legal={legal} doAction={doAction} />
+          {endTurnLegal && (
+            <button className="big primary" data-testid="end-turn" onClick={() => doAction({ type: 'endTurn' })}>
+              End turn
+            </button>
+          )}
           {armorLegal && (
             <button
               className="big"
@@ -441,11 +446,7 @@ function HumanControls({
               Place armor
             </button>
           )}
-          {endTurnLegal && (
-            <button className="big primary" data-testid="end-turn" onClick={() => doAction({ type: 'endTurn' })}>
-              End turn
-            </button>
-          )}
+          <GarrisonEditor state={state} legal={legal} doAction={doAction} />
         </div>
       );
     }

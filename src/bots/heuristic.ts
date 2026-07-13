@@ -68,9 +68,9 @@ function pruneCandidates(_state: GameState, legal: Action[]): Action[] {
   }
   for (const a of legal) {
     if (a.type === 'withdraw') {
-      // Withdrawing is a human undo affordance: the redeploy pickup already
-      // freed every garrison, so any reachable distribution is reachable by
-      // deploys alone. Skipping it also keeps the bot loop-free.
+      // Bots leave their conquest garrisons where they are and only place
+      // leftover hand tokens; skipping withdraw keeps the one-ply chooser
+      // loop-free (withdraw+deploy pairs would otherwise dither forever).
       continue;
     }
     if (a.type === 'deploy' || a.type === 'defDeploy') {

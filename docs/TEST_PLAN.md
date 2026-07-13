@@ -59,10 +59,10 @@ self-play harness is `src/test/selfplay.ts`; E2E in `src/test/e2e/`.
   Die faces 0,0,0,1,2,3 [A2] — deterministic under seed.
 - Redeployment: river regions force-emptied (non-Kraken); each region keeps
   ≥1; tokens in hand with no regions persist to next turn.
-- Redeployment is a full reorganization: garrisons deployed during the
-  conquest phase are freed (down to 1 per region) and can move anywhere;
-  `withdraw` (the UI's − button) puts deployed tokens back in hand, never
-  below 1 per region, and is bounded per turn (A64).
+- Redeployment is a full reorganization: garrisons stay where the conquests
+  put them, and `withdraw` (the UI's − button) lifts tokens back into hand
+  — never below 1 per region, bounded per turn (A64) — so the whole force
+  can move anywhere.
 
 ## Cluster: decline (`decline.test.ts`)
 - Decline turn: no conquests; 1 token per region flipped, rest to tray;
