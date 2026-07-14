@@ -31,6 +31,15 @@ Deploy anywhere static (the app is fully self-contained):
 npm run build && npx vercel deploy --prod dist   # or netlify deploy --prod --dir=dist
 ```
 
+`dist/` and `node_modules/` are build/dependency artifacts and are **not** committed
+(`.gitignore`) — always `npm run build` fresh before deploying so the bundle, the
+service-worker version and the on-screen `v<version> · build <time>` stamp are current.
+
+The production build embeds a strict Content-Security-Policy (`script-src 'self'`,
+same-origin everything). For defense-in-depth, also send it as a response header at
+your host and add `frame-ancestors 'none'` (a directive `<meta>` cannot express),
+e.g. Vercel `headers` or a Netlify `_headers` file.
+
 ## Verify
 
 ```bash
