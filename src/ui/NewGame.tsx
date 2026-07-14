@@ -106,6 +106,10 @@ export function NewGame({
         Races and powers are drafted in-game from the combo market, exactly as in the board game —
         there is no faction pre-pick.
       </p>
+
+      <p className="buildstamp" data-testid="build-stamp">
+        v{__APP_VERSION__} · build {__BUILD_ID__}
+      </p>
     </div>
   );
 }

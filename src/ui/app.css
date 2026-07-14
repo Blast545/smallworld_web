@@ -97,6 +97,13 @@ input {
   color: var(--muted);
   font-size: 14px;
 }
+.buildstamp {
+  color: var(--muted);
+  opacity: 0.6;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  margin-top: 8px;
+}
 .newgame label {
   display: flex;
   flex-direction: column;
